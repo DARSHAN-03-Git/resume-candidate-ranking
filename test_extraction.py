@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
-from src.baseline_extractor import extract_baseline_from_text
+from src.baseline_extractor import extract_baseline_from_text, extract_resume
 from src.ranking_core import compute_experience_years, compute_experience_score
 
 print("=== RUNNING PYTHON RESUME EXTRACTION & SCORING TESTS ===\n")
@@ -109,5 +109,59 @@ assert exp_years >= 5, f"Expected exp_years >= 5, got {exp_years}"
 assert exp_score == 1.0, f"Expected exp_score == 1.0, got {exp_score}"
 
 print("✔ Test 3 PASSED: Downstream experience score computed directly from start/end years.\n")
+
+# --- TEST 4: Phone with parenthesis & All 12 Skills Extraction ---
+print("Test 4: Phone with parenthesis & 12 skills extraction...")
+resume_12_skills = """
+Alex Morgan | (555) 019-4482 | alex.morgan@example.com | New York, NY
+
+SUMMARY
+Senior full-stack and cloud engineer with deep distributed systems experience.
+
+EXPERIENCE
+Lead Systems Engineer — Northwind Systems
+2019 - Present
+- Built distributed messaging pipelines with RabbitMQ and Celery
+- Deployed microservices to AWS EKS with Kubernetes
+
+EDUCATION
+B.S. in Computer Science — State University
+2015 - 2019
+
+SKILLS
+Docker, FastAPI, Git, PostgreSQL, Python, RabbitMQ, Celery, Kubernetes/K8s, AWS EKS, ReactJS, PyTorch, TensorFlow
+"""
+
+parsed_12 = extract_baseline_from_text(resume_12_skills)
+dict_12 = extract_resume(resume_12_skills)
+
+print(f"Extracted Candidate Phone: {parsed_12.candidate.phone}")
+print(f"Extracted Explicit Skills ({len(parsed_12.skills.explicit)}): {parsed_12.skills.explicit}")
+
+# Verify phone preserves opening parenthesis
+assert parsed_12.candidate.phone == "(555) 019-4482", f"Expected '(555) 019-4482', got '{parsed_12.candidate.phone}'"
+assert dict_12["candidate"]["phone"] == "(555) 019-4482", f"Expected dict phone '(555) 019-4482', got '{dict_12['candidate']['phone']}'"
+
+# Verify all 12 skills are present in parsed_12.skills.explicit
+expected_12_skills = [
+    "AWS EKS",
+    "Celery",
+    "Docker",
+    "FastAPI",
+    "Git",
+    "Kubernetes",
+    "PostgreSQL",
+    "PyTorch",
+    "Python",
+    "RabbitMQ",
+    "ReactJS",
+    "TensorFlow",
+]
+
+assert len(parsed_12.skills.explicit) == 12, f"Expected exactly 12 skills, got {len(parsed_12.skills.explicit)}: {parsed_12.skills.explicit}"
+assert parsed_12.skills.explicit == expected_12_skills, f"Skills mismatch: expected {expected_12_skills}, got {parsed_12.skills.explicit}"
+assert dict_12["skills"]["explicit"] == expected_12_skills, f"Dict skills mismatch: {dict_12['skills']['explicit']}"
+
+print("✔ Test 4 PASSED: (555) 019-4482 retains opening parenthesis and all 12 skills extracted into skills.explicit.\n")
 
 print("ALL PYTHON TESTS COMPLETED SUCCESSFULLY! 🎉")

@@ -1,0 +1,18 @@
+Maya Thompson | (555) 019-4482 | maya.thompson@example.com | Seattle, WA
+
+SUMMARY
+Senior Distributed Systems and Cloud Engineer with 6+ years designing high-throughput microservices, data pipelines, and machine learning infrastructure.
+
+EXPERIENCE
+Senior Backend Engineer — Northwind Systems
+2019 - Present
+- Architected asynchronous event streaming pipelines handling 50k msgs/sec using RabbitMQ and Celery
+- Led migration of containerized microservices to AWS EKS with Kubernetes and Docker
+- Built high-performance async REST APIs using Python and FastAPI with PostgreSQL
+
+EDUCATION
+B.S. in Computer Science — University of Washington
+2015 - 2019
+
+SKILLS
+Python, FastAPI, PostgreSQL, Docker, Git, RabbitMQ, Celery, Kubernetes/K8s, AWS EKS, ReactJS, PyTorch, TensorFlow

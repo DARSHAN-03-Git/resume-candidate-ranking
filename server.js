@@ -23,8 +23,18 @@ const SKILL_ALIASES = {
   python: "Python",
   fastapi: "FastAPI",
   postgresql: "PostgreSQL",
+  postgres: "PostgreSQL",
   sql: "SQL",
   docker: "Docker",
+  git: "Git",
+  rabbitmq: "RabbitMQ",
+  celery: "Celery",
+  "aws eks": "AWS EKS",
+  eks: "AWS EKS",
+  reactjs: "ReactJS",
+  react: "React",
+  pytorch: "PyTorch",
+  tensorflow: "TensorFlow",
   "rest api": "REST APIs",
   "rest apis": "REST APIs",
   pandas: "pandas",
@@ -32,10 +42,8 @@ const SKILL_ALIASES = {
   "a/b testing": "A/B testing",
   "scikit-learn": "scikit-learn",
   "model evaluation": "model evaluation",
-  git: "Git",
   javascript: "JavaScript",
   typescript: "TypeScript",
-  react: "React",
   css: "CSS",
   accessibility: "Accessibility",
 };
@@ -242,9 +250,9 @@ function draftOutreach(record, job) {
 // --- Rule-based resume text extraction ---
 const SECTION_NAMES = ["SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"];
 const EMAIL_RE = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/;
-const PHONE_RE = /(?:\+?\d[\d ()-]{7,}\d)/;
+const PHONE_RE = /(?:\+?\d{1,3}[\s.-]*)?(?:\(\d{2,5}\)|\b\d{2,5}\b)[\d\s().-]{5,}\d/;
 const YEAR_RE = /\b(?:19|20)\d{2}\b/g;
-const SKILL_RE = /\b(?:python|fastapi|postgresql|docker|rest apis?|sql|pandas|tableau|a\/b testing|scikit-learn|model evaluation|git|javascript|typescript|react|css|accessibility)\b/gi;
+const SKILL_RE = /\b(?:aws\s+eks|eks|kubernetes|k8s|rabbitmq|celery|pytorch|tensorflow|reactjs|react|python|fastapi|postgresql|postgres|docker|git|rest\s+apis?|sql|pandas|tableau|a\/b\s+testing|scikit-learn|model\s+evaluation|javascript|typescript|css|accessibility)\b/gi;
 
 const CURRENT_YEAR = new Date().getFullYear();
 

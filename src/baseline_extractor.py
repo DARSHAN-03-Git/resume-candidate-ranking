@@ -28,10 +28,45 @@ except ImportError:
 
 SECTION_NAMES = ["SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"]
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-PHONE_RE = re.compile(r"(?:\+?\d[\d ()-]{7,}\d)")
+PHONE_RE = re.compile(r"(?:\+?\d{1,3}[\s.-]*)?(?:\(\d{2,5}\)|\b\d{2,5}\b)[\d\s().-]{5,}\d")
 YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+SKILL_ALIASES = {
+    "k8s": "Kubernetes",
+    "kubernetes": "Kubernetes",
+    "python": "Python",
+    "fastapi": "FastAPI",
+    "postgresql": "PostgreSQL",
+    "postgres": "PostgreSQL",
+    "sql": "SQL",
+    "docker": "Docker",
+    "git": "Git",
+    "rabbitmq": "RabbitMQ",
+    "celery": "Celery",
+    "aws eks": "AWS EKS",
+    "eks": "AWS EKS",
+    "reactjs": "ReactJS",
+    "react": "React",
+    "pytorch": "PyTorch",
+    "tensorflow": "TensorFlow",
+    "rest api": "REST APIs",
+    "rest apis": "REST APIs",
+    "pandas": "pandas",
+    "tableau": "Tableau",
+    "a/b testing": "A/B testing",
+    "scikit-learn": "scikit-learn",
+    "model evaluation": "model evaluation",
+    "javascript": "JavaScript",
+    "typescript": "TypeScript",
+    "css": "CSS",
+    "accessibility": "Accessibility",
+}
 SKILL_RE = re.compile(
-    r"\b(?:python|fastapi|postgresql|docker|rest apis?|sql|pandas|tableau|a/b testing|scikit-learn|model evaluation|git|javascript|typescript|react|css|accessibility)\b",
+    r"\b(?:"
+    r"aws\s+eks|eks|kubernetes|k8s|rabbitmq|celery|pytorch|tensorflow|reactjs|react|"
+    r"python|fastapi|postgresql|postgres|docker|git|"
+    r"rest\s+apis?|sql|pandas|tableau|a/b\s+testing|scikit-learn|model\s+evaluation|"
+    r"javascript|typescript|css|accessibility"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -361,8 +396,11 @@ def extract_baseline_from_text(
 
         edu_idx += 1
 
-    skills_text = " ".join(sections["SKILLS"])
-    explicit_skills = sorted({match.group(0).strip() for match in SKILL_RE.finditer(skills_text)})
+    skills_text = " ".join(sections["SKILLS"]) if sections["SKILLS"] else text
+    explicit_skills = sorted({
+        SKILL_ALIASES.get(match.group(0).strip().casefold(), match.group(0).strip())
+        for match in SKILL_RE.finditer(skills_text)
+    })
 
     warnings = []
     if not candidate_name:
