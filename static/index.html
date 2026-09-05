@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Candidate Lens</title>
+  <style>
+    :root { color-scheme: light; --ink: #18221f; --paper: #f3f0e8; --accent: #d2643b; --line: #c9c4b8; }
+    body { margin: 0; background: radial-gradient(circle at top right, #dce8d8, var(--paper) 48%); color: var(--ink); font: 16px Georgia, serif; }
+    main { max-width: 920px; margin: 0 auto; padding: 48px 24px; }
+    h1 { font-size: clamp(2.5rem, 7vw, 5.5rem); line-height: .9; max-width: 600px; margin: 0 0 16px; }
+    p { max-width: 620px; line-height: 1.5; }
+    section { margin-top: 36px; border-top: 1px solid var(--line); padding-top: 20px; }
+    textarea { width: 100%; min-height: 130px; box-sizing: border-box; padding: 14px; border: 1px solid var(--line); background: #fffdf8; font: inherit; }
+    button { margin-top: 12px; padding: 11px 16px; border: 0; background: var(--accent); color: white; cursor: pointer; font: inherit; }
+    #result { white-space: pre-wrap; margin-top: 18px; background: #fffdf8; border-left: 4px solid var(--accent); padding: 16px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Candidate Lens</h1>
+  <p>Parse a resume, keep its evidence visible, and compare candidates against a job description.</p>
+  <section>
+    <label for="job">Job description</label>
+    <textarea id="job">Backend Engineer
+3 years Python FastAPI PostgreSQL Docker experience</textarea>
+    <p><input id="resume" type="file" accept=".pdf,.docx"><button id="parse">Parse resume</button><button id="rank">Rank candidates</button></p>
+    <div id="result" aria-live="polite">Ready.</div>
+  </section>
+</main>
+<script>
+const result = document.querySelector('#result');
+const job = () => ({text: document.querySelector('#job').value});
+document.querySelector('#parse').onclick = async () => {
+  const file = document.querySelector('#resume').files[0];
+  if (!file) { result.textContent = 'Choose a PDF or DOCX resume first.'; return; }
+  const body = new FormData(); body.append('file', file);
+  const response = await fetch('/candidates/parse', {method: 'POST', body});
+  result.textContent = JSON.stringify(await response.json(), null, 2);
+};
+document.querySelector('#rank').onclick = async () => {
+  const response = await fetch('/rank', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(job())});
+  result.textContent = JSON.stringify(await response.json(), null, 2);
+};
+</script>
+</body>
+</html>

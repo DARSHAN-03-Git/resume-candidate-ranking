@@ -1,0 +1,637 @@
+{
+  "data_status": "synthetic_generated",
+  "records": [
+    {
+      "name": "Asha Mehta 01",
+      "target_backend": true,
+      "benchmark_relevant": true,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Daniel Silva 02",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Leila Fischer 03",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Mateo Rossi 04",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Nora Haddad 05",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Priya Patel 06",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Jonas Nguyen 07",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Mina Brooks 08",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Owen Chen 09",
+      "target_backend": true,
+      "benchmark_relevant": true,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Rina Okafor 10",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Kai Mehta 11",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Sofia Silva 12",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Ethan Fischer 13",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Amara Rossi 14",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Luca Haddad 15",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Ivy Patel 16",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Noah Nguyen 17",
+      "target_backend": true,
+      "benchmark_relevant": true,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Zara Brooks 18",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Milo Chen 19",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Anika Okafor 20",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Asha Mehta 21",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Daniel Silva 22",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Leila Fischer 23",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Mateo Rossi 24",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Nora Haddad 25",
+      "target_backend": true,
+      "benchmark_relevant": true,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Priya Patel 26",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Jonas Nguyen 27",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Mina Brooks 28",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Owen Chen 29",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Rina Okafor 30",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Kai Mehta 31",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Sofia Silva 32",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Ethan Fischer 33",
+      "target_backend": true,
+      "benchmark_relevant": true,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Amara Rossi 34",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Luca Haddad 35",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Ivy Patel 36",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Noah Nguyen 37",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Zara Brooks 38",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Milo Chen 39",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Anika Okafor 40",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Asha Mehta 41",
+      "target_backend": true,
+      "benchmark_relevant": true,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Daniel Silva 42",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Leila Fischer 43",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Mateo Rossi 44",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Nora Haddad 45",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "API Engineer"
+    },
+    {
+      "name": "Priya Patel 46",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "Pandas",
+        "SQL"
+      ],
+      "title": "Data Analyst"
+    },
+    {
+      "name": "Jonas Nguyen 47",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "REST APIs",
+        "SQL"
+      ],
+      "title": "Platform Engineer"
+    },
+    {
+      "name": "Mina Brooks 48",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS",
+        "Accessibility",
+        "Git"
+      ],
+      "title": "Frontend Developer"
+    },
+    {
+      "name": "Owen Chen 49",
+      "target_backend": true,
+      "benchmark_relevant": false,
+      "skills": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker"
+      ],
+      "title": "Backend Engineer"
+    },
+    {
+      "name": "Rina Okafor 50",
+      "target_backend": false,
+      "benchmark_relevant": false,
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "CSS"
+      ],
+      "title": "Frontend Developer"
+    }
+  ]
+}
