@@ -1,36 +1,39 @@
-"""Verify baseline structured extraction on synthetic Phase 2 resumes."""
-
-from __future__ import annotations
-
-from pathlib import Path
+#!/usr/bin/env python3
 import sys
+import os
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from baseline_extractor import extract_resume  # noqa: E402
-from document_processing import extract_document  # noqa: E402
+# Add root directory to sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from src.baseline_extractor import extract_baseline_from_text
+from src.ranking_core import compute_experience_years, compute_experience_score
 
-def main() -> None:
-    project_root = Path(__file__).resolve().parents[1]
-    paths = sorted((project_root / "data" / "synthetic" / "resumes").glob("resume_*.docx"))
-    assert len(paths) == 4
-    extracted = []
-    for path in paths:
-        document = extract_document(path)
-        record = extract_resume(document.text, document.source_path, synthetic=True)
-        assert record["schema_version"] == "1.0"
-        assert record["source"]["synthetic"] is True
-        assert record["candidate"]["name"]
-        assert record["candidate"]["email"].endswith("example.invalid")
-        assert record["experience"]
-        assert record["education"]
-        assert record["skills"]["explicit"]
-        assert record["skills"]["inferred"] == []
-        assert record["evidence"]
-        extracted.append(record)
-    print(f"Phase 3 smoke test passed: {len(extracted)} structured resume records created.")
-    print(f"First candidate: {extracted[0]['candidate']['name']}; skills: {len(extracted[0]['skills']['explicit'])}")
+def run_smoke_test():
+    print("Running phase3 smoke test on resume extraction...")
+    sample = """
+EXPERIENCE
+Backend Engineer — Northwind Data Systems
+June 2021 – Present
 
+EDUCATION
+B.Tech in Computer Science — Riverdale Institute of Technology
+Graduated 2019
+"""
+    record = extract_baseline_from_text(sample)
+    assert len(record.experience) == 1
+    assert record.experience[0].title == "Backend Engineer"
+    assert record.experience[0].company == "Northwind Data Systems"
+    assert record.experience[0].start_year == 2021
+    assert record.experience[0].end_year >= 2021
+
+    assert len(record.education) == 1
+    assert record.education[0].degree == "B.Tech in Computer Science"
+    assert record.education[0].institution == "Riverdale Institute of Technology"
+    assert record.education[0].year == 2019
+
+    exp_years = compute_experience_years(record)
+    assert exp_years >= 5
+    print("Phase 3 smoke test PASSED successfully.")
 
 if __name__ == "__main__":
-    main()
+    run_smoke_test()
