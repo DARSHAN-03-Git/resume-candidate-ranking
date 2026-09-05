@@ -58,3 +58,26 @@ class ResumeRecord:
     skills: SkillsProfile = field(default_factory=SkillsProfile)
     evidence: List[EvidenceItem] = field(default_factory=list)
     extraction: ExtractionMeta = field(default_factory=lambda: ExtractionMeta(method="rule_based"))
+
+
+SCHEMA_VERSION = "1.0"
+
+
+def empty_resume(source_path: str, synthetic: bool = False) -> dict:
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "source": {"path": source_path, "synthetic": synthetic},
+        "candidate": {
+            "name": None,
+            "email": None,
+            "phone": None,
+            "location": None,
+            "summary": None,
+        },
+        "experience": [],
+        "education": [],
+        "skills": {"explicit": [], "inferred": []},
+        "evidence": [],
+        "extraction": {"method": "rule_based", "warnings": []},
+    }
+

@@ -1,0 +1,15 @@
+pdfminer.six>=20221105
+python-docx>=1.1.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+SQLAlchemy>=2.0.0
+psycopg[binary]>=3.2.0
+celery>=5.4.0
+sentence-transformers>=5.1.0
+faiss-cpu>=1.11.0
+weaviate-client>=4.16.0
+neo4j>=5.28.0
+transformers>=4.56.0
+datasets>=4.0.0
+seqeval>=1.2.2

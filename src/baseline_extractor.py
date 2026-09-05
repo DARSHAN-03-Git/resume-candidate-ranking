@@ -1,17 +1,30 @@
 import re
+from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from src.resume_schema import (
-    CandidateProfile,
-    EducationItem,
-    EvidenceItem,
-    ExperienceItem,
-    ExtractionMeta,
-    ResumeRecord,
-    ResumeSource,
-    SkillsProfile,
-)
+try:
+    from src.resume_schema import (
+        CandidateProfile,
+        EducationItem,
+        EvidenceItem,
+        ExperienceItem,
+        ExtractionMeta,
+        ResumeRecord,
+        ResumeSource,
+        SkillsProfile,
+    )
+except ImportError:
+    from resume_schema import (
+        CandidateProfile,
+        EducationItem,
+        EvidenceItem,
+        ExperienceItem,
+        ExtractionMeta,
+        ResumeRecord,
+        ResumeSource,
+        SkillsProfile,
+    )
 
 SECTION_NAMES = ["SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"]
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
@@ -386,3 +399,14 @@ def extract_baseline_from_text(
         evidence=evidence,
         extraction=ExtractionMeta(method="rule_based", warnings=warnings),
     )
+
+
+def extract_resume(
+    text: str,
+    source_path: str = "<memory>",
+    synthetic: bool = False,
+) -> dict[str, Any]:
+    """Extract conservative fields and evidence from normalized resume text as a dictionary."""
+    record = extract_baseline_from_text(text, source_path=source_path, synthetic=synthetic)
+    return asdict(record)
+
