@@ -2,6 +2,29 @@
 
 from __future__ import annotations
 
+import os
+
+# Set thread environment variables before any math/tensor libraries are loaded
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+# Configure PyTorch threading at genuine process start, before FastAPI, Uvicorn, or any models
+try:
+    import torch
+
+    torch.set_num_threads(1)
+    if hasattr(torch, "set_num_interop_threads"):
+        try:
+            torch.set_num_interop_threads(1)
+        except RuntimeError:
+            pass
+except ImportError:
+    pass
+
 import gc
 from pathlib import Path
 import sys
@@ -24,7 +47,7 @@ from ranking_core import (  # noqa: E402
     parse_job_description,
     rank_candidates,
 )
-from real_pipeline import _init_torch_runtime, get_memory_diagnostics  # noqa: E402
+from real_pipeline import get_memory_diagnostics  # noqa: E402
 from storage import initialize_database, list_candidates, save_candidate  # noqa: E402
 
 
@@ -37,7 +60,6 @@ class JobDescription(BaseModel):
 
 @app.on_event("startup")
 def startup() -> None:
-    _init_torch_runtime()
     initialize_database()
 
 

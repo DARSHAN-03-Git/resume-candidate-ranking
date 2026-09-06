@@ -15,14 +15,24 @@ os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+_TORCH_INITIALIZED = False
+
+
 def _init_torch_runtime() -> None:
-    """Configure PyTorch in memory-conservative single-thread mode."""
+    """Safely configure PyTorch in memory-conservative single-thread mode at process start."""
+    global _TORCH_INITIALIZED
+    if _TORCH_INITIALIZED:
+        return
+    _TORCH_INITIALIZED = True
     try:
         import torch
 
         torch.set_num_threads(1)
         if hasattr(torch, "set_num_interop_threads"):
-            torch.set_num_interop_threads(1)
+            try:
+                torch.set_num_interop_threads(1)
+            except RuntimeError:
+                pass
     except ImportError:
         pass
 
@@ -50,7 +60,6 @@ class RealMatchingPipeline:
     def embedder(self) -> Any:
         """Lazy-load the embedding model once on first vector encoding."""
         if self._embedder is None:
-            _init_torch_runtime()
             from sentence_transformers import SentenceTransformer
 
             self._embedder = SentenceTransformer(self.embedding_model_name)
@@ -60,7 +69,6 @@ class RealMatchingPipeline:
     def reranker(self) -> Any:
         """Lazy-load the cross-encoder once on first rerank call (/rank)."""
         if self._reranker is None:
-            _init_torch_runtime()
             from sentence_transformers import CrossEncoder
 
             self._reranker = CrossEncoder(self.reranker_model_name)
