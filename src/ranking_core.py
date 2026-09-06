@@ -84,12 +84,21 @@ def jaccard_similarity(candidate_skills: Iterable[str], required_skills: Iterabl
     return len(candidate & required) / len(candidate | required) if candidate | required else 0.0
 
 
-def score_candidate(record: dict[str, Any], job: dict[str, Any], weights: dict[str, float] | None = None) -> dict[str, Any]:
+def score_candidate(
+    record: dict[str, Any],
+    job: dict[str, Any],
+    weights: dict[str, float] | None = None,
+    semantic_score: float | None = None,
+) -> dict[str, Any]:
     weights = weights or {"semantic": 0.5, "experience": 0.3, "skills": 0.2}
     explicit = record.get("skills", {}).get("explicit", [])
     inferred = [item["skill"] for item in record.get("skills", {}).get("inferred", [])]
     pipeline = get_pipeline()
-    semantic = float(pipeline.encode([candidate_text(record), job["source_text"]])[0] @ pipeline.encode([candidate_text(record), job["source_text"]])[1])
+    if semantic_score is not None:
+        semantic = float(semantic_score)
+    else:
+        encoded = pipeline.encode([candidate_text(record), job["source_text"]])
+        semantic = float(encoded[0] @ encoded[1])
     end_years = [item.get("end_year") for item in record.get("experience", []) if item.get("end_year")]
     start_years = [item.get("start_year") for item in record.get("experience", []) if item.get("start_year")]
     experience_years = max(end_years, default=0) - min(start_years, default=0) if start_years else 0
@@ -130,10 +139,21 @@ def rank_candidates(records: list[dict[str, Any]], job: dict[str, Any], backend:
         raise ValueError(f"Unsupported retrieval backend: {backend}")
     reranked = pipeline.rerank(job["source_text"], [record for record, _ in retrieved])
     scores = {record.get("candidate", {}).get("name"): score for record, score in reranked}
+
+    # Batch encode candidate texts and job text once to prevent redundant memory and forward passes
+    cand_texts = [candidate_text(r) for r in records]
+    cand_vectors = pipeline.encode(cand_texts)
+    job_vector = pipeline.encode([job["source_text"]])[0]
+    semantic_scores = {
+        records[i].get("candidate", {}).get("name"): float(cand_vectors[i] @ job_vector)
+        for i in range(len(records))
+    }
+
     ranked = []
     for record in records:
-        result = score_candidate(record, job)
         candidate_name = record.get("candidate", {}).get("name")
+        sem_score = semantic_scores.get(candidate_name)
+        result = score_candidate(record, job, semantic_score=sem_score)
         if candidate_name not in scores:
             raise RuntimeError(f"Retrieval backend {backend!r} did not return candidate {candidate_name!r}")
         result["components"]["cross_encoder"] = round(scores[candidate_name], 6)

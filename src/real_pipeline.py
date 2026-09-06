@@ -7,32 +7,82 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+# Ensure single-threaded execution to minimize OpenMP/MKL thread pool memory overhead
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+def _init_torch_runtime() -> None:
+    """Configure PyTorch in memory-conservative single-thread mode."""
+    try:
+        import torch
+
+        torch.set_num_threads(1)
+        if hasattr(torch, "set_num_interop_threads"):
+            torch.set_num_interop_threads(1)
+    except ImportError:
+        pass
+
+
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+# Default to distilled TinyBERT cross-encoder (~17MB weights, ~40MB RAM) for memory-constrained
+# environments like Render 512MB free tier. Full 6-layer model ("cross-encoder/ms-marco-MiniLM-L-6-v2",
+# ~90MB weights, ~240MB RAM) can be specified via RERANKER_MODEL for full-memory local/Docker stacks.
+RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-TinyBERT-L-2-v2")
 
 
 class RealMatchingPipeline:
-    """Owns the non-fallback retrieval and reranking components."""
+    """Owns retrieval and reranking components with lazy loading and singleton caching."""
 
     def __init__(self, embedding_model: str = EMBEDDING_MODEL, reranker_model: str = RERANKER_MODEL) -> None:
-        import numpy as np
-        from sentence_transformers import CrossEncoder, SentenceTransformer
-
         self.embedding_model_name = embedding_model
         self.reranker_model_name = reranker_model
         self.weaviate_host = os.getenv("WEAVIATE_HOST")
         self.weaviate_port = int(os.getenv("WEAVIATE_PORT", "8080"))
         self.retrieval_backend = "uninitialized"
-        self.embedder = SentenceTransformer(embedding_model)
-        self.reranker = CrossEncoder(reranker_model)
+        self._embedder = None
+        self._reranker = None
 
-    def encode(self, texts: list[str]) -> np.ndarray:
+    @property
+    def embedder(self) -> Any:
+        """Lazy-load the embedding model once on first vector encoding."""
+        if self._embedder is None:
+            _init_torch_runtime()
+            from sentence_transformers import SentenceTransformer
+
+            self._embedder = SentenceTransformer(self.embedding_model_name)
+        return self._embedder
+
+    @property
+    def reranker(self) -> Any:
+        """Lazy-load the cross-encoder once on first rerank call (/rank)."""
+        if self._reranker is None:
+            _init_torch_runtime()
+            from sentence_transformers import CrossEncoder
+
+            self._reranker = CrossEncoder(self.reranker_model_name)
+        return self._reranker
+
+    def encode(self, texts: list[str]) -> Any:
         import numpy as np
 
-        vectors = self.embedder.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
-        return np.asarray(vectors, dtype="float32")
+        try:
+            import torch
 
-    def build_faiss_index(self, records: list[dict[str, Any]]) -> tuple[Any, np.ndarray]:
+            ctx = torch.inference_mode()
+        except (ImportError, AttributeError):
+            from contextlib import nullcontext
+
+            ctx = nullcontext()
+
+        with ctx:
+            vectors = self.embedder.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+            return np.asarray(vectors, dtype="float32")
+
+    def build_faiss_index(self, records: list[dict[str, Any]]) -> tuple[Any, Any]:
         import faiss
 
         vectors = self.encode([record_text(record) for record in records])
@@ -69,9 +119,26 @@ class RealMatchingPipeline:
             return self.retrieve_faiss(records, query, limit=limit)
 
     def rerank(self, query: str, candidates: list[dict[str, Any]]) -> list[tuple[dict[str, Any], float]]:
+        import gc
+
+        try:
+            import torch
+
+            ctx = torch.inference_mode()
+        except (ImportError, AttributeError):
+            from contextlib import nullcontext
+
+            ctx = nullcontext()
+
         pairs = [(query, record_text(candidate)) for candidate in candidates]
-        scores = self.reranker.predict(pairs, show_progress_bar=False)
-        return sorted(zip(candidates, (float(score) for score in scores)), key=lambda item: item[1], reverse=True)
+        with ctx:
+            scores = self.reranker.predict(pairs, show_progress_bar=False)
+
+        results = sorted(zip(candidates, (float(score) for score in scores)), key=lambda item: item[1], reverse=True)
+        del pairs
+        del scores
+        gc.collect()
+        return results
 
     def upsert_weaviate(self, records: list[dict[str, Any]], host: str | None = None, port: int | None = None) -> int:
         import weaviate
@@ -136,3 +203,37 @@ def get_pipeline() -> RealMatchingPipeline:
     if _pipeline is None:
         _pipeline = RealMatchingPipeline()
     return _pipeline
+
+
+def get_memory_diagnostics() -> dict[str, Any]:
+    """Inspect current process resident memory (VmRSS) and model loading state."""
+    rss_mb = 0.0
+    try:
+        with open("/proc/self/status", "r") as status_file:
+            for line in status_file:
+                if line.startswith("VmRSS:"):
+                    rss_mb = round(int(line.split()[1]) / 1024.0, 2)
+                    break
+    except Exception:
+        import resource
+
+        rss_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 2)
+
+    torch_threads = 1
+    try:
+        import torch
+
+        torch_threads = torch.get_num_threads()
+    except Exception:
+        pass
+
+    pipeline = _pipeline
+    return {
+        "memory_rss_mb": rss_mb,
+        "embedder_loaded": pipeline._embedder is not None if pipeline else False,
+        "reranker_loaded": pipeline._reranker is not None if pipeline else False,
+        "embedding_model": pipeline.embedding_model_name if pipeline else EMBEDDING_MODEL,
+        "reranker_model": pipeline.reranker_model_name if pipeline else RERANKER_MODEL,
+        "torch_num_threads": torch_threads,
+    }
+

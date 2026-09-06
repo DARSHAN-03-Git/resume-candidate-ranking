@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 from pathlib import Path
 import sys
 import tempfile
@@ -23,6 +24,7 @@ from ranking_core import (  # noqa: E402
     parse_job_description,
     rank_candidates,
 )
+from real_pipeline import _init_torch_runtime, get_memory_diagnostics  # noqa: E402
 from storage import initialize_database, list_candidates, save_candidate  # noqa: E402
 
 
@@ -35,12 +37,28 @@ class JobDescription(BaseModel):
 
 @app.on_event("startup")
 def startup() -> None:
+    _init_torch_runtime()
     initialize_database()
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "resume-candidate-ranking"}
+def health() -> dict:
+    diag = get_memory_diagnostics()
+    return {
+        "status": "ok",
+        "service": "resume-candidate-ranking",
+        "memory_rss_mb": diag.get("memory_rss_mb"),
+        "models": {
+            "embedder_loaded": diag.get("embedder_loaded"),
+            "reranker_loaded": diag.get("reranker_loaded"),
+            "reranker_model": diag.get("reranker_model"),
+        },
+    }
+
+
+@app.get("/system/memory")
+def system_memory() -> dict:
+    return get_memory_diagnostics()
 
 
 @app.get("/", response_class=FileResponse)
@@ -82,6 +100,7 @@ def rank(job: JobDescription) -> dict:
     parsed_job = parse_job_description(job.text)
     records = list_candidates()
     ranked = rank_candidates(records, parsed_job)
+    gc.collect()
     return {"job": parsed_job, "ranked": ranked}
 
 
@@ -89,7 +108,9 @@ def rank(job: JobDescription) -> dict:
 def lookalikes(candidate_name: str, limit: int = 3) -> list[dict]:
     records = list_candidates()
     try:
-        return find_lookalikes(records, candidate_name, limit)
+        results = find_lookalikes(records, candidate_name, limit)
+        gc.collect()
+        return results
     except StopIteration as error:
         raise HTTPException(status_code=404, detail="Candidate not found") from error
 
@@ -101,3 +122,4 @@ def outreach(candidate_name: str, job: JobDescription) -> dict[str, str]:
     if record is None:
         raise HTTPException(status_code=404, detail="Candidate not found")
     return {"candidate": candidate_name, "draft": draft_outreach(record, parse_job_description(job.text))}
+

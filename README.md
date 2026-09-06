@@ -59,12 +59,12 @@ Phase 1 check passed: architecture and data contract are present.
 - Python 3.11 or 3.12, FastAPI, Pydantic, SQLAlchemy/Alembic, PostgreSQL
 - pdfminer.six, python-docx, optional Tesseract OCR only for verified scanned documents
 - spaCy baseline and Hugging Face Transformers/Datasets for attempted DistilBERT NER fine-tuning
-- sentence-transformers and a cross-encoder reranker
+- sentence-transformers and a cross-encoder reranker (distilled `cross-encoder/ms-marco-TinyBERT-L-2-v2` for 512MB Render deployments; `cross-encoder/ms-marco-MiniLM-L-6-v2` for full-stack local)
 - FAISS for the learning baseline; Weaviate for persistent local vector retrieval
 - Neo4j for skill relationships and inference provenance
 - RabbitMQ and Celery for asynchronous batch processing
 - Docker Compose for the real local stack; kind or minikube for Kubernetes demonstration
-- A lightweight FastAPI/UI deployment for the public core flow only
+- A lightweight FastAPI/UI deployment for the public core flow only (lazy-loaded models, single-threaded torch, sub-300MB peak memory)
 
 Heavy dependencies and infrastructure are intentionally deferred until the phase that needs and verifies them.
 
