@@ -12,7 +12,7 @@ os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-# Configure PyTorch threading at genuine process start, before FastAPI, Uvicorn, or any models
+# Configure PyTorch threading and disable gradient tracking at genuine process start, before FastAPI, Uvicorn, or any models
 try:
     import torch
 
@@ -22,6 +22,7 @@ try:
             torch.set_num_interop_threads(1)
         except RuntimeError:
             pass
+    torch.set_grad_enabled(False)
 except ImportError:
     pass
 
@@ -61,6 +62,10 @@ class JobDescription(BaseModel):
 @app.on_event("startup")
 def startup() -> None:
     initialize_database()
+    import psutil, os
+    process = psutil.Process(os.getpid())
+    mem_mb = process.memory_info().rss / (1024 * 1024)
+    print(f"[MEMORY] app startup: {mem_mb:.1f} MB")
 
 
 @app.get("/health")
@@ -107,6 +112,10 @@ async def parse_candidate(file: UploadFile = File(...)) -> dict:
         })
         payload["source"]["path"] = file.filename or "upload"
         payload["id"] = save_candidate(payload)
+        import psutil, os
+        process = psutil.Process(os.getpid())
+        mem_mb = process.memory_info().rss / (1024 * 1024)
+        print(f"[MEMORY] /candidates/parse complete: {mem_mb:.1f} MB")
         return payload
     finally:
         temporary_path.unlink(missing_ok=True)

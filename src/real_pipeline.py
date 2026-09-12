@@ -71,7 +71,17 @@ class RealMatchingPipeline:
         if self._reranker is None:
             from sentence_transformers import CrossEncoder
 
+            import psutil, os
+            process = psutil.Process(os.getpid())
+            mem_mb = process.memory_info().rss / (1024 * 1024)
+            print(f"[MEMORY] before cross-encoder load: {mem_mb:.1f} MB")
+
             self._reranker = CrossEncoder(self.reranker_model_name)
+
+            import psutil, os
+            process = psutil.Process(os.getpid())
+            mem_mb = process.memory_info().rss / (1024 * 1024)
+            print(f"[MEMORY] after cross-encoder load: {mem_mb:.1f} MB")
         return self._reranker
 
     def encode(self, texts: list[str]) -> Any:
