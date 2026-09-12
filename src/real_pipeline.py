@@ -62,7 +62,17 @@ class RealMatchingPipeline:
         if self._embedder is None:
             from sentence_transformers import SentenceTransformer
 
+            import psutil, os
+            process = psutil.Process(os.getpid())
+            mem_mb = process.memory_info().rss / (1024 * 1024)
+            print(f"[MEMORY] before embedding model load: {mem_mb:.1f} MB")
+
             self._embedder = SentenceTransformer(self.embedding_model_name)
+
+            import psutil, os
+            process = psutil.Process(os.getpid())
+            mem_mb = process.memory_info().rss / (1024 * 1024)
+            print(f"[MEMORY] after embedding model load: {mem_mb:.1f} MB")
         return self._embedder
 
     @property
