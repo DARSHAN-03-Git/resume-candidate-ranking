@@ -930,10 +930,6 @@
         <button class="btn-clear" id="btnClearFile" title="Clear file">&times;</button>
       </div>
 
-      <button id="btnMayaSample" class="btn btn-sample" title="Instant test with Maya Thompson">
-        <span>⚡</span> Quick Test: Load Maya Thompson (12-Skill Sample)
-      </button>
-
       <div class="actions-row">
         <button id="parse" class="btn btn-secondary" style="width: 100%;">
           <span>🔍</span> Parse Resume &amp; Extract Ontology
@@ -1031,7 +1027,6 @@ const fileInput = document.querySelector('#resume');
 const fileSelected = document.querySelector('#fileSelected');
 const fileNameSpan = document.querySelector('#fileName');
 const btnClearFile = document.querySelector('#btnClearFile');
-const btnMayaSample = document.querySelector('#btnMayaSample');
 const loadingState = document.querySelector('#loadingState');
 const loadingTitle = document.querySelector('#loadingTitle');
 const loadingMsg = document.querySelector('#loadingMsg');
@@ -1089,19 +1084,6 @@ dropzone.addEventListener('drop', (e) => {
     fileNameSpan.textContent = e.dataTransfer.files[0].name;
     fileSelected.classList.add('active');
   }
-});
-
-// Load Maya Thompson Sample
-btnMayaSample.addEventListener('click', async () => {
-  const blob = new Blob([MAYA_THOMPSON_TEXT], { type: 'text/plain' });
-  const file = new File([blob], 'maya_thompson_resume.txt', { type: 'text/plain' });
-  const dataTransfer = new DataTransfer();
-  dataTransfer.items.add(file);
-  fileInput.files = dataTransfer.files;
-  fileNameSpan.textContent = 'maya_thompson_resume.txt (Loaded)';
-  fileSelected.classList.add('active');
-  // Auto-trigger parse
-  document.querySelector('#parse').click();
 });
 
 // Score color helper: green for strong (>=0.70), amber for partial (0.45-0.69), red for weak (<0.45)
