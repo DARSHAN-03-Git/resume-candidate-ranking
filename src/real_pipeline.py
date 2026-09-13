@@ -1,11 +1,11 @@
-"""Verified transformer retrieval pipeline: embeddings, FAISS, reranking, and Weaviate."""
+"""Verified ONNX retrieval pipeline: embeddings, FAISS, reranking, and Weaviate."""
 
 from __future__ import annotations
 
 import os
-import uuid
 from pathlib import Path
 from typing import Any
+import uuid
 
 # Ensure single-threaded execution to minimize OpenMP/MKL thread pool memory overhead
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -15,41 +15,169 @@ os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-_TORCH_INITIALIZED = False
-
-
-def _init_torch_runtime() -> None:
-    """Safely configure PyTorch in memory-conservative single-thread mode at process start."""
-    global _TORCH_INITIALIZED
-    if _TORCH_INITIALIZED:
-        return
-    _TORCH_INITIALIZED = True
-    try:
-        import torch
-
-        torch.set_num_threads(1)
-        if hasattr(torch, "set_num_interop_threads"):
-            try:
-                torch.set_num_interop_threads(1)
-            except RuntimeError:
-                pass
-    except ImportError:
-        pass
-
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_ONNX_ROOT = Path(os.getenv("ONNX_MODELS_DIR", ROOT / "onnx_models"))
+DEFAULT_EMBEDDER_PATH = Path(os.getenv("EMBEDDER_ONNX_PATH", DEFAULT_ONNX_ROOT / "embedder"))
+DEFAULT_RERANKER_PATH = Path(os.getenv("RERANKER_ONNX_PATH", DEFAULT_ONNX_ROOT / "reranker"))
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-# Default to distilled TinyBERT cross-encoder (~17MB weights, ~40MB RAM) for memory-constrained
-# environments like Render 512MB free tier. Full 6-layer model ("cross-encoder/ms-marco-MiniLM-L-6-v2",
-# ~90MB weights, ~240MB RAM) can be specified via RERANKER_MODEL for full-memory local/Docker stacks.
 RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-TinyBERT-L-2-v2")
+
+
+class OnnxEmbedder:
+    """Lightweight ONNX Runtime embedder with Hugging Face tokenizers."""
+
+    def __init__(self, model_dir: Path | str, model_filename: str | None = None) -> None:
+        model_path = Path(model_dir)
+        import onnxruntime as ort
+        from tokenizers import Tokenizer
+
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = 1
+        opts.inter_op_num_threads = 1
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+        if model_filename:
+            model_file = model_path / model_filename
+        else:
+            model_file = model_path / "model.onnx"
+            if not model_file.exists():
+                model_file = model_path / "model_quantized.onnx"
+        if not model_file.exists():
+            raise FileNotFoundError(
+                f"No ONNX model file found in {model_path}. Run scripts/export_onnx_models.py first."
+            )
+
+        tokenizer_file = model_path / "tokenizer.json"
+        if not tokenizer_file.exists():
+            raise FileNotFoundError(
+                f"No tokenizer.json found in {model_path}. Run scripts/export_onnx_models.py first."
+            )
+
+        self.session = ort.InferenceSession(str(model_file), sess_options=opts, providers=["CPUExecutionProvider"])
+        self.tokenizer = Tokenizer.from_file(str(tokenizer_file))
+        self.tokenizer.enable_truncation(max_length=256)
+        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]")
+        self._input_names = {inp.name for inp in self.session.get_inputs()}
+
+    def encode(self, texts: list[str], normalize_embeddings: bool = True, **kwargs: Any) -> Any:
+        import numpy as np
+
+        if not texts:
+            return np.empty((0, 384), dtype=np.float32)
+
+        encoded = self.tokenizer.encode_batch(texts)
+        input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
+        attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
+
+        feed = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+        }
+        if "token_type_ids" in self._input_names:
+            feed["token_type_ids"] = np.array([e.type_ids for e in encoded], dtype=np.int64)
+
+        outputs = self.session.run(None, feed)
+        token_embeddings = outputs[0]
+
+        # Mean pooling taking attention mask into account
+        mask_expanded = np.broadcast_to(
+            np.expand_dims(attention_mask, -1),
+            token_embeddings.shape,
+        ).astype(np.float32)
+
+        sum_embeddings = np.sum(token_embeddings * mask_expanded, axis=1)
+        sum_mask = np.clip(mask_expanded.sum(axis=1), a_min=1e-9, a_max=None)
+        embeddings = sum_embeddings / sum_mask
+
+        if normalize_embeddings:
+            norms = np.linalg.norm(embeddings, ord=2, axis=1, keepdims=True)
+            norms = np.clip(norms, a_min=1e-12, a_max=None)
+            embeddings = embeddings / norms
+
+        return embeddings.astype(np.float32)
+
+
+class OnnxReranker:
+    """Lightweight ONNX Runtime cross-encoder reranker with Hugging Face tokenizers."""
+
+    def __init__(self, model_dir: Path | str, model_filename: str | None = None) -> None:
+        model_path = Path(model_dir)
+        import onnxruntime as ort
+        from tokenizers import Tokenizer
+
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = 1
+        opts.inter_op_num_threads = 1
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+        if model_filename:
+            model_file = model_path / model_filename
+        else:
+            model_file = model_path / "model_quantized.onnx"
+            if not model_file.exists():
+                model_file = model_path / "model.onnx"
+        if not model_file.exists():
+            raise FileNotFoundError(
+                f"No ONNX model file found in {model_path}. Run scripts/export_onnx_models.py first."
+            )
+
+        tokenizer_file = model_path / "tokenizer.json"
+        if not tokenizer_file.exists():
+            raise FileNotFoundError(
+                f"No tokenizer.json found in {model_path}. Run scripts/export_onnx_models.py first."
+            )
+
+        self.session = ort.InferenceSession(str(model_file), sess_options=opts, providers=["CPUExecutionProvider"])
+        self.tokenizer = Tokenizer.from_file(str(tokenizer_file))
+        self.tokenizer.enable_truncation(max_length=512)
+        self.tokenizer.enable_padding(pad_id=0, pad_token="[PAD]")
+        self._input_names = {inp.name for inp in self.session.get_inputs()}
+
+    def predict(self, pairs: list[tuple[str, str]], **kwargs: Any) -> list[float]:
+        if not pairs:
+            return []
+
+        import numpy as np
+
+        encoded = self.tokenizer.encode_batch(pairs)
+        input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
+        attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
+
+        feed = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+        }
+        if "token_type_ids" in self._input_names:
+            feed["token_type_ids"] = np.array([e.type_ids for e in encoded], dtype=np.int64)
+
+        outputs = self.session.run(None, feed)
+        logits = outputs[0]
+
+        if logits.ndim == 2 and logits.shape[1] == 1:
+            scores = logits[:, 0]
+        elif logits.ndim == 2 and logits.shape[1] > 1:
+            scores = logits[:, 1]
+        elif logits.ndim == 1:
+            scores = logits
+        else:
+            scores = logits.squeeze()
+
+        return [float(s) for s in scores]
 
 
 class RealMatchingPipeline:
     """Owns retrieval and reranking components with lazy loading and singleton caching."""
 
-    def __init__(self, embedding_model: str = EMBEDDING_MODEL, reranker_model: str = RERANKER_MODEL) -> None:
-        self.embedding_model_name = embedding_model
-        self.reranker_model_name = reranker_model
+    def __init__(
+        self,
+        embedder_path: Path | str = DEFAULT_EMBEDDER_PATH,
+        reranker_path: Path | str = DEFAULT_RERANKER_PATH,
+    ) -> None:
+        self.embedder_path = Path(embedder_path)
+        self.reranker_path = Path(reranker_path)
+        self.embedding_model_name = EMBEDDING_MODEL
+        self.reranker_model_name = RERANKER_MODEL
         self.weaviate_host = os.getenv("WEAVIATE_HOST")
         self.weaviate_port = int(os.getenv("WEAVIATE_PORT", "8080"))
         self.retrieval_backend = "uninitialized"
@@ -58,18 +186,20 @@ class RealMatchingPipeline:
 
     @property
     def embedder(self) -> Any:
-        """Lazy-load the embedding model once on first vector encoding."""
+        """Lazy-load the ONNX embedding model once on first vector encoding."""
         if self._embedder is None:
-            from sentence_transformers import SentenceTransformer
+            import os
+            import psutil
 
-            import psutil, os
             process = psutil.Process(os.getpid())
             mem_mb = process.memory_info().rss / (1024 * 1024)
             print(f"[MEMORY] before embedding model load: {mem_mb:.1f} MB")
 
-            self._embedder = SentenceTransformer(self.embedding_model_name)
+            self._embedder = OnnxEmbedder(self.embedder_path)
 
-            import psutil, os
+            import os
+            import psutil
+
             process = psutil.Process(os.getpid())
             mem_mb = process.memory_info().rss / (1024 * 1024)
             print(f"[MEMORY] after embedding model load: {mem_mb:.1f} MB")
@@ -77,18 +207,20 @@ class RealMatchingPipeline:
 
     @property
     def reranker(self) -> Any:
-        """Lazy-load the cross-encoder once on first rerank call (/rank)."""
+        """Lazy-load the ONNX cross-encoder once on first rerank call (/rank)."""
         if self._reranker is None:
-            from sentence_transformers import CrossEncoder
+            import os
+            import psutil
 
-            import psutil, os
             process = psutil.Process(os.getpid())
             mem_mb = process.memory_info().rss / (1024 * 1024)
             print(f"[MEMORY] before cross-encoder load: {mem_mb:.1f} MB")
 
-            self._reranker = CrossEncoder(self.reranker_model_name)
+            self._reranker = OnnxReranker(self.reranker_path)
 
-            import psutil, os
+            import os
+            import psutil
+
             process = psutil.Process(os.getpid())
             mem_mb = process.memory_info().rss / (1024 * 1024)
             print(f"[MEMORY] after cross-encoder load: {mem_mb:.1f} MB")
@@ -97,18 +229,8 @@ class RealMatchingPipeline:
     def encode(self, texts: list[str]) -> Any:
         import numpy as np
 
-        try:
-            import torch
-
-            ctx = torch.inference_mode()
-        except (ImportError, AttributeError):
-            from contextlib import nullcontext
-
-            ctx = nullcontext()
-
-        with ctx:
-            vectors = self.embedder.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
-            return np.asarray(vectors, dtype="float32")
+        vectors = self.embedder.encode(texts, normalize_embeddings=True)
+        return np.asarray(vectors, dtype="float32")
 
     def build_faiss_index(self, records: list[dict[str, Any]]) -> tuple[Any, Any]:
         import faiss
@@ -149,18 +271,8 @@ class RealMatchingPipeline:
     def rerank(self, query: str, candidates: list[dict[str, Any]]) -> list[tuple[dict[str, Any], float]]:
         import gc
 
-        try:
-            import torch
-
-            ctx = torch.inference_mode()
-        except (ImportError, AttributeError):
-            from contextlib import nullcontext
-
-            ctx = nullcontext()
-
         pairs = [(query, record_text(candidate)) for candidate in candidates]
-        with ctx:
-            scores = self.reranker.predict(pairs, show_progress_bar=False)
+        scores = self.reranker.predict(pairs)
 
         results = sorted(zip(candidates, (float(score) for score in scores)), key=lambda item: item[1], reverse=True)
         del pairs
@@ -247,21 +359,12 @@ def get_memory_diagnostics() -> dict[str, Any]:
 
         rss_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 2)
 
-    torch_threads = 1
-    try:
-        import torch
-
-        torch_threads = torch.get_num_threads()
-    except Exception:
-        pass
-
     pipeline = _pipeline
     return {
         "memory_rss_mb": rss_mb,
+        "runtime": "onnxruntime",
         "embedder_loaded": pipeline._embedder is not None if pipeline else False,
         "reranker_loaded": pipeline._reranker is not None if pipeline else False,
         "embedding_model": pipeline.embedding_model_name if pipeline else EMBEDDING_MODEL,
         "reranker_model": pipeline.reranker_model_name if pipeline else RERANKER_MODEL,
-        "torch_num_threads": torch_threads,
     }
-

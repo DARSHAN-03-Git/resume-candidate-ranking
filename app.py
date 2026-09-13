@@ -12,20 +12,6 @@ os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-# Configure PyTorch threading and disable gradient tracking at genuine process start, before FastAPI, Uvicorn, or any models
-try:
-    import torch
-
-    torch.set_num_threads(1)
-    if hasattr(torch, "set_num_interop_threads"):
-        try:
-            torch.set_num_interop_threads(1)
-        except RuntimeError:
-            pass
-    torch.set_grad_enabled(False)
-except ImportError:
-    pass
-
 import gc
 from pathlib import Path
 import sys
