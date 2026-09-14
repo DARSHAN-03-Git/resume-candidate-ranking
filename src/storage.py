@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, select
+from sqlalchemy import DateTime, Integer, String, Text, create_engine, delete, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 
@@ -54,3 +54,12 @@ def list_candidates() -> list[dict[str, Any]]:
     with Session(engine) as session:
         rows = session.scalars(select(Candidate).order_by(Candidate.id)).all()
         return [{"id": row.id, **json.loads(row.payload)} for row in rows]
+
+
+def clear_candidates() -> int:
+    initialize_database()
+    with Session(engine) as session:
+        result = session.execute(delete(Candidate))
+        session.commit()
+        return result.rowcount
+

@@ -35,7 +35,7 @@ from ranking_core import (  # noqa: E402
     rank_candidates,
 )
 from real_pipeline import get_memory_diagnostics  # noqa: E402
-from storage import initialize_database, list_candidates, save_candidate  # noqa: E402
+from storage import clear_candidates, initialize_database, list_candidates, save_candidate  # noqa: E402
 
 
 app = FastAPI(title="Resume Candidate Ranking", version="0.1.0")
@@ -110,6 +110,13 @@ async def parse_candidate(file: UploadFile = File(...)) -> dict:
 @app.get("/candidates")
 def candidates() -> list[dict]:
     return list_candidates()
+
+
+@app.delete("/candidates/clear")
+def clear_all_candidates() -> dict:
+    deleted_count = clear_candidates()
+    return {"status": "cleared", "deleted_count": deleted_count}
+
 
 
 @app.post("/rank")
