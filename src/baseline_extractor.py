@@ -260,11 +260,25 @@ def extract_baseline_from_text(
         if upper.startswith("SYNTHETIC RESUME"):
             continue
         if "|" in line and "@" in line:
-            candidate_name = line.split("|")[0].strip() or None
-            break
+            first_segment = line.split("|")[0].strip()
+            if "," in first_segment:
+                # First segment contains a comma (e.g. "Bengaluru, India") -> location pattern, not a person's name.
+                # Continue scanning subsequent lines for a proper name line.
+                continue
+            if first_segment:
+                candidate_name = first_segment
+                break
         if not any(token in upper for token in ["@", "SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"]):
-            candidate_name = line
-            break
+            if "," in line:
+                continue
+            if any(ch.isdigit() for ch in line):
+                continue
+            if upper.rstrip(":") in SECTION_NAMES:
+                continue
+            words = line.split()
+            if 2 <= len(words) <= 4 and all(w[0].isupper() for w in words):
+                candidate_name = line
+                break
 
     location = None
     for line in lines[:4]:

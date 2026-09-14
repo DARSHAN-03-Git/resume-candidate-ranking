@@ -476,12 +476,26 @@ export function extractResume(text, sourcePath = "<memory>", synthetic = false) 
     const upper = line.toUpperCase();
     if (upper.startsWith("SYNTHETIC RESUME")) continue;
     if (line.includes("|") && line.includes("@")) {
-      candidateName = line.split("|")[0].trim() || null;
-      break;
+      const firstSegment = line.split("|")[0].trim();
+      if (firstSegment.includes(",")) {
+        // First segment contains a comma (e.g. "Bengaluru, India") -> location pattern, not a person's name.
+        // Continue scanning subsequent lines for a proper name line.
+        continue;
+      }
+      if (firstSegment) {
+        candidateName = firstSegment;
+        break;
+      }
     }
     if (!["@", "SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"].some((token) => upper.includes(token))) {
-      candidateName = line;
-      break;
+      if (line.includes(",")) continue;
+      if (/\d/.test(line)) continue;
+      if (SECTION_NAMES.includes(upper.replace(/:$/, ""))) continue;
+      const words = line.split(/\s+/).filter(Boolean);
+      if (words.length >= 2 && words.length <= 4 && words.every((w) => /^[A-Z]/.test(w))) {
+        candidateName = line;
+        break;
+      }
     }
   }
 
@@ -814,6 +828,56 @@ app.post("/candidates/parse", upload.single("file"), async (req, res) => {
 
 app.get("/candidates", (req, res) => {
   res.json(candidatesStore);
+});
+
+app.delete("/candidates/clear", (req, res) => {
+  const count = candidatesStore.length;
+  candidatesStore.length = 0;
+  res.json({ status: "cleared", deleted_count: count });
+});
+
+app.post(["/debug/extract", "/candidates/debug-extract"], upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ detail: "No file uploaded" });
+    }
+    const originalName = req.file.originalname || "upload";
+    const ext = path.extname(originalName).toLowerCase();
+    let rawText = "";
+    let pageCount = 1;
+    if (ext === ".docx") {
+      const parsed = await mammoth.extractRawText({ buffer: req.file.buffer });
+      rawText = parsed.value;
+    } else if (ext === ".pdf") {
+      const parsed = await pdfParse(req.file.buffer);
+      rawText = parsed.text;
+      pageCount = parsed.numpages || 1;
+    } else {
+      rawText = req.file.buffer.toString("utf-8");
+    }
+
+    const rawLines = rawText.split(/\r?\n/);
+    console.log(`\n=======================================================`);
+    console.log(`DEBUG EXTRACT: ${originalName} (${ext})`);
+    console.log(`=======================================================`);
+    rawLines.forEach((line, i) => {
+      console.log(`${String(i + 1).padStart(3, " ")}: ${line}`);
+    });
+    console.log(`=======================================================\n`);
+
+    const sampleRecord = extractResume(rawText, originalName, false);
+    res.json({
+      source: originalName,
+      page_count: pageCount,
+      line_count: rawLines.length,
+      extracted_candidate_name: sampleRecord.candidate?.name,
+      lines: rawLines.map((line, i) => ({ line_number: i + 1, text: line })),
+      raw_text: rawText,
+    });
+  } catch (err) {
+    console.error("Failed debug extraction:", err);
+    res.status(500).json({ detail: err.message });
+  }
 });
 
 app.post("/rank", (req, res) => {
